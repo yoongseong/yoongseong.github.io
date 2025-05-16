@@ -1,0 +1,77 @@
+ <!DOCTYPE html>
+ <html>
+ <head>
+     <title>Speech to Text</title>
+ </head>
+ <body>
+     <h1>Ask a Question</h1>
+     <!-- <button onclick="startRecording()">Start Recording</button>
+     <button onclick="stopRecording()">Stop Recording</button> -->
+     <button id="recordButton" onclick="toggleRecording()">Start Recording</button>
+     <p id="result"></p>
+
+     <script>
+        const synth = window.speechSynthesis;
+        let mediaRecorder;
+         let isRecording = false;
+
+        //  function startRecording() {
+        //      recognition.start();
+        //      isRecording = true;
+        //  }
+        async function toggleRecording() {
+            const button = document.getElementById('recordButton');
+            if (isRecording) {
+                mediaRecorder.stop();
+                button.textContent = 'Start Recording';
+                isRecording = false;
+            } else {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                const audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks);
+                    const audioArrayBuffer = await audioBlob.arrayBuffer();
+                    const audioUint8Array = new Uint8Array(audioArrayBuffer);
+
+                    const response = await fetch('https://api.cloudflare.com/client/v4/accounts/a9a8fb22eb7827de659cb983ee3086bd/ai/run/@cf/openai/whisper', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer lmjPr4mFpRTjy-GWE--1watSTs3d3pDa32E4wKB0'
+                        },
+                        body: JSON.stringify({ audio: Array.from(audioUint8Array) })
+                    });
+
+                    const result = await response.json();
+                    document.getElementById('result').textContent = result.text;
+                };
+
+                mediaRecorder.start();
+                button.textContent = 'Stop Recording';
+                isRecording = true;
+            }
+        }
+
+  
+
+
+
+
+         function stopRecording() {
+             if (isRecording) {
+                 recognition.stop();
+                 isRecording = false;
+
+                 const utterThis = new SpeechSynthesisUtterance("The asset is located at demo area.");
+                 synth.speak(utterThis);
+             }
+         }
+     </script>
+ </body>
+ </html>
